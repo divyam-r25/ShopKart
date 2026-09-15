@@ -1,4 +1,7 @@
 require("dotenv").config();
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET === "replace-with-a-long-random-secret") {
+  throw new Error("JWT_SECRET must be configured with a unique secret before starting the server");
+}
 const express = require("express");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
