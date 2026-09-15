@@ -1,7 +1,95 @@
 const Customer = require("../models/customer.model");
 const generateToken = require("../utils/generateToken");
-const cookieOptions = { httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", secure: process.env.NODE_ENV === "production", maxAge: 7 * 24 * 60 * 60 * 1000 };
-exports.register = async (req, res, next) => { try { const { fullName, email, password, phone } = req.body; if (!fullName || !email || !password || !phone) return res.status(400).json({ success: false, message: "All fields are required" }); if (password.length < 6) return res.status(400).json({ success: false, message: "Password must be at least 6 characters" }); if (await Customer.exists({ email: email.toLowerCase() })) return res.status(409).json({ success: false, message: "An account with this email already exists" }); const customer = await Customer.create({ fullName, email, password, phone }); res.status(201).json({ success: true, message: "Customer registered successfully", customer: { _id: customer._id, fullName: customer.fullName, email: customer.email, phone: customer.phone } }); } catch (error) { next(error); } };
-exports.login = async (req, res, next) => { try { const { email, password } = req.body; const customer = await Customer.findOne({ email: email?.toLowerCase() }); if (!customer || !(await customer.comparePassword(password || ""))) return res.status(401).json({ success: false, message: "Invalid credentials" }); res.cookie("token", generateToken(customer._id.toString()), cookieOptions); res.json({ success: true, message: "Login successful", customer: { _id: customer._id, fullName: customer.fullName, email: customer.email, phone: customer.phone } }); } catch (error) { next(error); } };
-exports.me = (req, res) => res.json(req.user);
-exports.logout = (req, res) => { res.clearCookie("token", { httpOnly: true, sameSite: cookieOptions.sameSite, secure: cookieOptions.secure }); res.json({ success: true, message: "Logged out successfully" }); };
+
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  secure: process.env.NODE_ENV === "production",
+  maxAge: 7 * 24 * 60 * 60 * 1000
+};
+
+exports.register = async (req, res, next) => {
+  try {
+    const { fullName, email, password, phone } = req.body;
+    if (!fullName || !email || !password || !phone) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = await Customer.findOne({ email: cleanEmail });
+    if (existing) {
+      return res.status(409).json({ success: false, message: "An account with this email already exists" });
+    }
+
+    const customer = await Customer.create({
+      fullName: fullName.trim(),
+      email: cleanEmail,
+      password,
+      phone: phone.trim()
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Customer registered successfully",
+      customer: {
+        _id: customer._id,
+        fullName: customer.fullName,
+        email: customer.email,
+        phone: customer.phone
+      }
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ success: false, message: "An account with this email already exists" });
+    }
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    next(error);
+  }
+};
+
+exports.login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: "Please provide email and password" });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const customer = await Customer.findOne({ email: cleanEmail });
+    if (!customer || !(await customer.comparePassword(password))) {
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
+    }
+
+    res.cookie("token", generateToken(customer._id.toString()), cookieOptions);
+    res.json({
+      success: true,
+      message: "Login successful",
+      customer: {
+        _id: customer._id,
+        fullName: customer.fullName,
+        email: customer.email,
+        phone: customer.phone
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.me = (req, res) => {
+  res.json(req.user);
+};
+
+exports.logout = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    sameSite: cookieOptions.sameSite,
+    secure: cookieOptions.secure
+  });
+  res.json({ success: true, message: "Logged out successfully" });
+};

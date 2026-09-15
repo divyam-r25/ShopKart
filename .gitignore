@@ -1,13 +1,17 @@
 # Dependencies
 node_modules/
+**/node_modules/
 
 # Environment files and local secrets
 .env
 .env.*
 !.env.example
+backend/.env
 
-# Frontend build output
+# Build and cache
 dist/
+.vite/
+**/.vite/
 
 # Logs
 *.log

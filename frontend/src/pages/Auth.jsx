@@ -1,7 +1,140 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { loginCustomer, registerCustomer } from "../services/api";
+
 const initial = { fullName: "", email: "", password: "", phone: "" };
-export default function Auth({ mode }) { const isRegister = mode === "register"; const [form, setForm] = useState(initial); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const navigate = useNavigate();
-  const submit = async (e) => { e.preventDefault(); setError(""); if (isRegister && (!form.fullName || !form.phone || form.password.length < 6)) return setError("Please complete every field. Password needs at least 6 characters."); setLoading(true); try { if (isRegister) { await registerCustomer(form); navigate("/login", { state: { message: "Account created — welcome to ShopKart." } }); } else { await loginCustomer(form); navigate("/home"); } } catch (err) { setError(err.response?.data?.message || "We couldn't complete that request. Try again."); } finally { setLoading(false); } };
-  return <main className="auth-page"><section className="auth-story"><Link className="brand light" to="/login"><span className="brand-mark">S</span><span>shopkart</span></Link><div className="story-copy"><p className="eyebrow">THE CURATED MARKETPLACE</p><h1>Find the pieces that feel <i>like you.</i></h1><p>Everyday discoveries, beautifully considered. Your next favourite is waiting.</p></div><div className="story-stats"><span><b>24h</b> dispatch</span><span><b>4.9/5</b> from shoppers</span></div></section><section className="auth-panel"><div className="auth-box"><p className="eyebrow accent">{isRegister ? "JOIN THE CLUB" : "WELCOME BACK"}</p><h2>{isRegister ? "Make it yours." : "Good to see you."}</h2><p className="auth-subtitle">{isRegister ? "Create your account and start discovering." : "Sign in to continue your ShopKart journey."}</p>{error && <div className="form-message error">{error}</div>}<form onSubmit={submit}>{isRegister && <label>Full name<input value={form.fullName} onChange={e => setForm({...form, fullName:e.target.value})} placeholder="Aarav Sharma" required/></label>}<label>Email address<input type="email" value={form.email} onChange={e => setForm({...form, email:e.target.value})} placeholder="you@example.com" required/></label>{isRegister && <label>Phone number<input value={form.phone} onChange={e => setForm({...form, phone:e.target.value})} placeholder="98765 43210" required/></label>}<label>Password<input type="password" value={form.password} onChange={e => setForm({...form, password:e.target.value})} placeholder="••••••••" minLength="6" required/></label><button className="primary-btn" disabled={loading}>{loading ? "Just a moment…" : isRegister ? "Create account  →" : "Sign in  →"}</button></form><p className="auth-switch">{isRegister ? "Already a member?" : "New to ShopKart?"} <Link to={isRegister ? "/login" : "/register"}>{isRegister ? "Sign in" : "Create an account"}</Link></p></div></section></main>; }
+
+export default function Auth({ mode, setUser }) {
+  const isRegister = mode === "register";
+  const [form, setForm] = useState(initial);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const successMessage = location.state?.message;
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (isRegister && (!form.fullName || !form.phone || form.password.length < 6)) {
+      return setError("Please complete every field. Password needs at least 6 characters.");
+    }
+
+    setLoading(true);
+    try {
+      if (isRegister) {
+        await registerCustomer(form);
+        navigate("/login", {
+          state: { message: "Account created successfully! Please sign in below." }
+        });
+      } else {
+        const { data } = await loginCustomer({
+          email: form.email,
+          password: form.password
+        });
+        if (setUser) setUser(data.customer);
+        navigate("/home");
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "We couldn't complete that request. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="auth-page">
+      <section className="auth-story">
+        <Link className="brand light" to="/login">
+          <span className="brand-mark">S</span>
+          <span>shopkart</span>
+        </Link>
+        <div className="story-copy">
+          <p className="eyebrow">THE CURATED MARKETPLACE</p>
+          <h1>
+            Find the pieces that feel <i>like you.</i>
+          </h1>
+          <p>Everyday discoveries, beautifully considered. Your next favourite is waiting.</p>
+        </div>
+        <div className="story-stats">
+          <span><b>24h</b> dispatch</span>
+          <span><b>4.9/5</b> from shoppers</span>
+        </div>
+      </section>
+      <section className="auth-panel">
+        <div className="auth-box">
+          <p className="eyebrow accent">{isRegister ? "JOIN THE CLUB" : "WELCOME BACK"}</p>
+          <h2>{isRegister ? "Make it yours." : "Good to see you."}</h2>
+          <p className="auth-subtitle">
+            {isRegister
+              ? "Create your account and start discovering."
+              : "Sign in to continue your ShopKart journey."}
+          </p>
+
+          {error && <div className="form-message error">{error}</div>}
+          {!error && successMessage && (
+            <div className="form-message success">{successMessage}</div>
+          )}
+
+          <form onSubmit={submit}>
+            {isRegister && (
+              <label>
+                Full name
+                <input
+                  value={form.fullName}
+                  onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                  placeholder="Aarav Sharma"
+                  required
+                />
+              </label>
+            )}
+            <label>
+              Email address
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="you@example.com"
+                required
+              />
+            </label>
+            {isRegister && (
+              <label>
+                Phone number
+                <input
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="98765 43210"
+                  required
+                />
+              </label>
+            )}
+            <label>
+              Password
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                placeholder="••••••••"
+                minLength="6"
+                required
+              />
+            </label>
+            <button className="primary-btn" disabled={loading}>
+              {loading ? "Just a moment…" : isRegister ? "Create account  →" : "Sign in  →"}
+            </button>
+          </form>
+
+          <p className="auth-switch">
+            {isRegister ? "Already a member?" : "New to ShopKart?"}{" "}
+            <Link to={isRegister ? "/login" : "/register"}>
+              {isRegister ? "Sign in" : "Create an account"}
+            </Link>
+          </p>
+        </div>
+      </section>
+    </main>
+  );
+}
