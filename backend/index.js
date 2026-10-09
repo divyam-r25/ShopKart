@@ -11,12 +11,18 @@ const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
 const customerRoutes = require("./routes/customer.routes");
 const productRoutes = require("./routes/product.routes");
+const wishlistRoutes = require("./routes/wishlist.routes");
+const cartRoutes = require("./routes/cart.routes");
+const orderRoutes = require("./routes/order.routes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
 app.use(express.json());
 app.use(cookieParser());
+
 app.use((req, res, next) => {
+
   const origin = req.headers.origin;
   const allowed = !origin || /^http:\/\/localhost(:\d+)?$/.test(origin) || origin === process.env.CLIENT_URL;
   if (allowed && origin) {
@@ -27,13 +33,21 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
   res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
+
 app.get("/", (req, res) => res.json({ success: true, message: "ShopKart API is running" }));
+
 app.use("/customers", customerRoutes);
 app.use("/products", productRoutes);
+app.use("/wishlist", wishlistRoutes);
+app.use("/cart", cartRoutes);
+app.use("/orders", orderRoutes);
+
 app.use((err, req, res, next) => {
+  
   console.error(err);
   const status = err.statusCode || err.status || 500;
   const message = err.message || "Something went wrong. Please try again.";

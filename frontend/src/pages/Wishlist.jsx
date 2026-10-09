@@ -1,0 +1,12 @@
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import { getWishlist, removeWishlist } from "../services/api";
+const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+export default function Wishlist({ user, setUser }) {
+ const [items, setItems] = useState([]), [state, setState] = useState("loading"), [removing, setRemoving] = useState("");
+ const load = useCallback(async () => { setState("loading"); try { const { data } = await getWishlist(); setItems(data.wishlist || []); setState("ready"); } catch { setState("error"); } }, []);
+ useEffect(() => { load(); }, [load]);
+ const remove = async (id) => { setRemoving(id); try { await removeWishlist(id); setItems((all) => all.filter((item) => item._id !== id)); } finally { setRemoving(""); } };
+ return <><Navbar user={user} setUser={setUser}/><main className="catalog"><div className="catalog-heading"><p className="eyebrow accent">SAVED FOR LATER</p><h1>My <i>wishlist.</i></h1></div>{state === "loading" && <div className="state"><div className="spinner"/><p>Loading your wishlist...</p></div>}{state === "error" && <div className="state"><h3>Unable to load wishlist.</h3><button className="primary-btn" onClick={load}>Try Again</button></div>}{state === "ready" && !items.length && <div className="state"><h3>Your wishlist is empty ❤️</h3><p>Save products you love and find them here later.</p><Link className="primary-btn" to="/products">Browse Products</Link></div>}{state === "ready" && !!items.length && <section className="product-grid">{items.map((product) => <article className="product-card" key={product._id}><Link to={`/products/${product._id}`} className="product-image"><img src={product.image} alt={product.name}/></Link><div className="product-info"><p className="eyebrow">{product.category}</p><h3>{product.name}</h3><p className="price">{money.format(product.price)}</p><p className="stock">{product.stock ? `${product.stock} in stock` : "Out of stock"}</p><div className="card-actions"><Link className="text-link" to={`/products/${product._id}`}>View details</Link><button className="text-button" disabled={removing === product._id} onClick={() => remove(product._id)}>{removing === product._id ? "Removing..." : "Remove ♥"}</button></div></div></article>)}</section>}</main></>;
+}

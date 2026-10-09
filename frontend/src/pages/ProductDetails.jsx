@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { getProduct } from "../services/api";
+import { addWishlist } from "../services/api";
+import { useCart } from "../context/CartContext";
 
 const money = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -14,6 +16,7 @@ export default function ProductDetails({ user, setUser }) {
   const [product, setProduct] = useState(null);
   const [error, setError] = useState(false);
   const [added, setAdded] = useState(false);
+  const { add } = useCart();
 
   useEffect(() => {
     getProduct(id)
@@ -73,13 +76,16 @@ export default function ProductDetails({ user, setUser }) {
             <button
               className="primary-btn add-cart"
               disabled={!product.stock}
-              onClick={() => setAdded(true)}
+              onClick={async () => { await add(product._id); setAdded(true); }}
             >
               {added
-                ? "Added to your wishlist ✓"
+                ? "Added to your cart ✓"
                 : product.stock
                 ? "Add to cart  +"
                 : "Out of stock"}
+            </button>
+            <button className="secondary-btn" onClick={() => addWishlist(product._id)}>
+              Save to wishlist ♡
             </button>
             <p className="fine-print">Complimentary delivery on orders over ₹1,500.</p>
           </div>

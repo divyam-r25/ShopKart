@@ -6,6 +6,16 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    host: true
-  }
+    host: true,
+    proxy: {
+      '/customers': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/products': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
+  },
 });

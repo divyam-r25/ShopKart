@@ -6,6 +6,12 @@ import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
+import Wishlist from "./pages/Wishlist";
+import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import Orders from "./pages/Orders";
+import OrderDetails from "./pages/OrderDetails";
+import { CartProvider } from "./context/CartContext";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -24,7 +30,7 @@ export default function App() {
     </ProtectedRoute>
   );
 
-  return (
+  return (<CartProvider user={user}>
     <Routes>
       <Route
         path="/login"
@@ -37,7 +43,11 @@ export default function App() {
       <Route path="/home" element={protect(<Home user={user} setUser={setUser} />)} />
       <Route path="/products" element={protect(<Products user={user} setUser={setUser} />)} />
       <Route path="/products/:id" element={protect(<ProductDetails user={user} setUser={setUser} />)} />
+      <Route path="/wishlist" element={protect(<Wishlist user={user} setUser={setUser} />)} />
+      <Route path="/cart" element={protect(<Cart user={user} setUser={setUser} />)} />
+      <Route path="/checkout" element={protect(<Checkout user={user} setUser={setUser} />)} />
+      <Route path="/orders" element={protect(<Orders user={user} setUser={setUser} />)} />
+      <Route path="/orders/:id" element={protect(<OrderDetails user={user} setUser={setUser} />)} />
       <Route path="*" element={<Navigate to="/home" replace />} />
-    </Routes>
-  );
+    </Routes></CartProvider>);
 }
